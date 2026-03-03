@@ -1,0 +1,49 @@
+<?php
+
+use App\Http\Controllers\Api\Admin\ChatRoomAdminController;
+use App\Http\Controllers\Api\Admin\ClientAdminController;
+use App\Http\Controllers\Api\Admin\InvoiceAdminController;
+use App\Http\Controllers\Api\Admin\ProjectAdminController;
+use App\Http\Controllers\Api\Admin\TaskAdminController;
+use App\Http\Controllers\Api\Admin\TeamMemberAdminController;
+use App\Http\Controllers\Api\Admin\TimelineEventAdminController;
+use App\Http\Controllers\Api\Admin\UserAdminController;
+use App\Http\Controllers\Api\AuthController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\TaskController;
+
+Route::middleware('api')->group(function () {
+    Route::get('/', function (Request $request) {
+        return response()->json(['status' => 'ok', 'app' => config('app.name')]);
+    });
+
+    // Public endpoints
+    Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
+    Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
+    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show'])->parameters(['invoices' => 'invoice']);
+    Route::apiResource('tasks', TaskController::class)->only(['index', 'show']);
+
+    // Authentication
+    Route::controller(AuthController::class)->group(function () {
+        Route::post('auth/register', 'register');
+        Route::post('auth/login', 'login');
+        Route::post('auth/logout', 'logout')->middleware('auth:sanctum');
+    });
+
+    // Admin routes - require sanctum auth and admin ability
+    Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(function () {
+        Route::apiResource('clients', ClientAdminController::class);
+        Route::apiResource('projects', ProjectAdminController::class);
+        Route::apiResource('invoices', InvoiceAdminController::class)->parameters(['invoices' => 'invoice']);
+        Route::apiResource('tasks', TaskAdminController::class);
+        Route::apiResource('users', UserAdminController::class);
+        Route::apiResource('team-members', TeamMemberAdminController::class);
+        Route::apiResource('chat-rooms', ChatRoomAdminController::class);
+        Route::apiResource('timeline-events', TimelineEventAdminController::class);
+    });
+});
