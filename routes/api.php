@@ -13,9 +13,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\ClientController;
-use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\CommunicationController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TeamController;
 
 Route::middleware('api')->group(function () {
     Route::get('/', function (Request $request) {
@@ -27,6 +30,18 @@ Route::middleware('api')->group(function () {
     Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
     Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show'])->parameters(['invoices' => 'invoice']);
     Route::apiResource('tasks', TaskController::class)->only(['index', 'show']);
+
+    // Authenticated endpoints
+    Route::middleware('auth:api')->group(function () {
+        Route::apiResource('teams', TeamController::class)->only(['index', 'show']);
+        Route::apiResource('communication', CommunicationController::class)->only(['index', 'show']);
+        Route::apiResource('payments', PaymentController::class)->only(['index', 'show']);
+
+        Route::apiResource('clients', ClientController::class)->except(['index', 'show']);
+        Route::apiResource('projects', ProjectController::class)->except(['index', 'show']);
+        Route::apiResource('invoices', InvoiceController::class)->except(['index', 'show'])->parameters(['invoices' => 'invoice']);
+        Route::apiResource('tasks', TaskController::class)->except(['index', 'show']);
+    });
 
     // Authentication
     Route::controller(AuthController::class)->group(function () {
