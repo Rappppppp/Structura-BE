@@ -32,11 +32,13 @@ Route::middleware('api')->group(function () {
     Route::controller(AuthController::class)->group(function () {
         Route::post('auth/register', 'register');
         Route::post('auth/login', 'login');
-        Route::post('auth/logout', 'logout')->middleware('auth:sanctum');
+        Route::get('auth/me', 'me')->middleware('auth:api');
+        Route::post('auth/logout', 'logout')->middleware('auth:api');
+        Route::post('auth/refresh', 'refresh')->middleware('auth:api');
     });
 
-    // Admin routes - require sanctum auth and admin ability
-    Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(function () {
+    // Admin routes - require JWT auth and admin ability
+    Route::middleware(['auth:api', 'can:admin'])->prefix('admin')->group(function () {
         Route::apiResource('clients', ClientAdminController::class);
         Route::apiResource('projects', ProjectAdminController::class);
         Route::apiResource('invoices', InvoiceAdminController::class)->parameters(['invoices' => 'invoice']);
