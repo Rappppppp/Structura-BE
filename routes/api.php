@@ -26,6 +26,7 @@ Route::middleware('api')->group(function () {
     });
 
     // Public endpoints
+    Route::get('projects/analytics/status', [ProjectController::class, 'analyticsStatus']);
     Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
     Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
     Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show'])->parameters(['invoices' => 'invoice']);
@@ -35,6 +36,7 @@ Route::middleware('api')->group(function () {
     Route::middleware('auth:api')->group(function () {
         Route::apiResource('teams', TeamController::class)->only(['index', 'show']);
         Route::apiResource('communication', CommunicationController::class)->only(['index', 'show']);
+        Route::post('communication/{communication}/messages', [CommunicationController::class, 'storeMessage']);
         Route::apiResource('payments', PaymentController::class)->only(['index', 'show']);
 
         Route::apiResource('clients', ClientController::class)->except(['index', 'show']);

@@ -44,7 +44,7 @@ class UserAdminController extends ApiController
             return $user;
         });
 
-        return $this->success(new UserResource($user), 'User created', 201);
+        return $this->success(data: new UserResource($user), message: 'User created', status: 201);
     }
 
     public function show(User $user)

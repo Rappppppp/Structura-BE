@@ -27,6 +27,10 @@ class CommunicationResource extends JsonResource
                         'id' => $message->id,
                         'message' => $message->message,
                         'user_id' => $message->user_id,
+                        'user' => [
+                            'id' => $message->user?->id,
+                            'name' => $message->user?->name,
+                        ],
                         'created_at' => $message->created_at?->toDateTimeString(),
                     ];
                 });

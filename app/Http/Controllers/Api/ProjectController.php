@@ -62,4 +62,27 @@ class ProjectController extends ApiController
         $project->delete();
         return $this->success([], 'Project deleted', 204);
     }
+
+    /**
+     * Get analytics status for projects.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function analyticsStatus(Request $request)
+    {
+        $totalProjects = Project::count();
+        $activeProjects = Project::where('status', 'active')->count();
+        $completedProjects = Project::where('status', 'completed')->count();
+        $onHoldProjects = Project::where('status', 'on_hold')->count();
+
+        $analytics = [
+            'total_projects' => $totalProjects,
+            'active_projects' => $activeProjects,
+            'completed_projects' => $completedProjects,
+            'on_hold_projects' => $onHoldProjects,
+        ];
+
+        return $this->success($analytics, 'Project analytics status retrieved');
+    }
 }

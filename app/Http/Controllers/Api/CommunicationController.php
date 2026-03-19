@@ -34,9 +34,28 @@ class CommunicationController extends ApiController
         $communication->load('project');
         $communication->setRelation(
             'messages',
-            $communication->messages()->paginate($perPage)
+            $communication->messages()->with('user')->paginate($perPage)
         );
 
         return $this->success(new CommunicationResource($communication), 'Chat room retrieved');
+    }
+
+    public function storeMessage(Request $request, ChatRoom $communication)
+    {
+        $data = $request->validate([
+            'content' => 'required|string',
+        ]);
+
+        $message = $communication->addMessage($request->user(), $data['content']);
+
+        return $this->success([
+            'id' => $message->id,
+            'content' => $message->message,
+            'created_at' => $message->created_at?->toDateTimeString(),
+            'user' => [
+                'id' => $request->user()?->id,
+                'name' => $request->user()?->name,
+            ],
+        ], 'Message sent', 201);
     }
 }

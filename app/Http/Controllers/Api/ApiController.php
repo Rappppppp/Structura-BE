@@ -11,7 +11,10 @@ class ApiController extends BaseController
     protected function success($data = [], string $message = 'OK', int $status = 200): JsonResponse
     {
         if ($data instanceof ResourceCollection) {
-            return $data->response()->setStatusCode($status)->setData(["message" => $message, 'data' => $data->resource]);
+            $response = $data->response()->setStatusCode($status);
+            $content = json_decode($response->getContent(), true);
+            $content['message'] = $message;
+            return $response->setData($content);
         }
 
         return response()->json(["message" => $message, 'data' => $data], $status);
