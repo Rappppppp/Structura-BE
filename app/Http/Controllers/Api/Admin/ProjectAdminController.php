@@ -15,7 +15,7 @@ class ProjectAdminController extends ApiController
     public function index(Request $request)
     {
         $perPage = (int) $request->get('per_page', 15);
-        $query = Project::query()->with(['client']);
+        $query = Project::query()->with(['clients']);
 
         if ($search = $request->get('search')) {
             $query->where('name', 'like', "%{$search}%");
@@ -29,9 +29,13 @@ class ProjectAdminController extends ApiController
     public function store(StoreProjectRequest $request)
     {
         $data = $request->validated();
+        $clientIds = $data['client_ids'];
+        unset($data['client_ids']);
 
-        $project = DB::transaction(function () use ($data) {
-            return Project::create($data);
+        $project = DB::transaction(function () use ($data, $clientIds) {
+            $project = Project::create($data);
+            $project->clients()->attach($clientIds);
+            return $project->load('clients');
         });
 
         return $this->success(new ProjectResource($project), 'Project created', 201);
@@ -39,14 +43,22 @@ class ProjectAdminController extends ApiController
 
     public function show(Project $project)
     {
-        $project->load(['client', 'tasks', 'invoices', 'team']);
+        $project->load(['clients', 'tasks', 'invoices', 'team']);
         return $this->success(new ProjectResource($project), 'Project retrieved');
     }
 
     public function update(UpdateProjectRequest $request, Project $project)
     {
-        $project->update($request->validated());
-        return $this->success(new ProjectResource($project), 'Project updated');
+        $data = $request->validated();
+        
+        if (isset($data['client_ids'])) {
+            $clientIds = $data['client_ids'];
+            unset($data['client_ids']);
+            $project->clients()->sync($clientIds);
+        }
+
+        $project->update($data);
+        return $this->success(new ProjectResource($project->load('clients')), 'Project updated');
     }
 
     public function destroy(Project $project)

@@ -8,7 +8,8 @@ class StoreProjectRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // TODO: add permission checks
+        // Allow any authenticated user to create a project
+        return auth()->check();
     }
 
     public function rules(): array
@@ -16,7 +17,8 @@ class StoreProjectRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'client_id' => 'required|exists:clients,id',
+            'client_ids' => 'required|array|min:1',
+            'client_ids.*' => 'uuid|exists:clients,id',
             'budget' => 'required|numeric|min:0',
             'progress' => 'nullable|numeric|min:0|max:100',
             'status' => 'nullable|in:active,review,completed,on-hold',

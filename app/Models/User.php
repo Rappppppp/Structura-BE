@@ -54,15 +54,10 @@ class User extends Authenticatable implements JWTSubject
 
     // ==================== RELATIONSHIPS ====================
 
-    public function teamMember(): HasOne
-    {
-        return $this->hasOne(TeamMember::class);
-    }
-
     public function projects()
     {
         return $this->belongsToMany(Project::class, 'project_user_roles', 'user_id', 'project_id')
-            ->withPivot('role')
+            ->withPivot('base_role', 'specialty_role')
             ->withTimestamps();
     }
 

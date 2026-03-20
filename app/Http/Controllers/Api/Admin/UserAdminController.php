@@ -8,8 +8,8 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserAdminController extends ApiController
 {
@@ -36,7 +36,7 @@ class UserAdminController extends ApiController
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
-                'role' => $data['role'] ?? 'user',
+                'role' => $data['role'] ?? 'client',
                 'company' => $data['company'] ?? null,
                 'phone_number' => $data['phone_number'] ?? null,
             ]);
@@ -60,12 +60,14 @@ class UserAdminController extends ApiController
         }
 
         $user->update($data);
+
         return $this->success(new UserResource($user), 'User updated');
     }
 
     public function destroy(User $user)
     {
         $user->delete();
+
         return $this->success([], 'User deleted', 204);
     }
 }

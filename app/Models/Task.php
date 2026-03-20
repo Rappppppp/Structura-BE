@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
     use HasFactory, HasUuids;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
@@ -22,6 +24,7 @@ class Task extends Model
         'assigned_to',
         'status',
         'priority',
+        'due_at',
     ];
 
     protected $casts = [
@@ -43,6 +46,11 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class)->latest();
     }
 
     // ==================== QUERY SCOPES ====================
@@ -170,7 +178,7 @@ class Task extends Model
      */
     public function getPriorityLevel(): int
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'high' => 3,
             'medium' => 2,
             'low' => 1,
@@ -191,7 +199,7 @@ class Task extends Model
      */
     public function getProgressPercentage(): float
     {
-        return match($this->status) {
+        return match ($this->status) {
             'done' => 100,
             'in-progress' => 50,
             'todo' => 0,
@@ -212,7 +220,7 @@ class Task extends Model
      */
     public function getFormattedTitle(): string
     {
-        $priority = match($this->priority) {
+        $priority = match ($this->priority) {
             'high' => '🔴',
             'medium' => '🟡',
             'low' => '🟢',
@@ -227,7 +235,7 @@ class Task extends Model
      */
     public function getStatusColor(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'done' => 'green',
             'in-progress' => 'blue',
             'todo' => 'gray',

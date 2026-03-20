@@ -3,13 +3,13 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateProjectRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // TODO: add permission checks
+        // Allow any authenticated user to update projects
+        return auth()->check();
     }
 
     public function rules(): array
@@ -17,7 +17,8 @@ class UpdateProjectRequest extends FormRequest
         return [
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'client_id' => 'sometimes|required|exists:clients,id',
+            'client_ids' => 'sometimes|required|array|min:1',
+            'client_ids.*' => 'uuid|exists:clients,id',
             'budget' => 'nullable|numeric|min:0',
             'progress' => 'nullable|numeric|min:0|max:100',
             'status' => 'nullable|in:active,review,completed,on-hold',

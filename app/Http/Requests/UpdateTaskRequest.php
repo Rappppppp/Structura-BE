@@ -20,6 +20,7 @@ class UpdateTaskRequest extends FormRequest
             'assigned_to' => 'nullable|exists:users,id',
             'status' => 'nullable|in:todo,in-progress,done',
             'priority' => 'nullable|in:high,medium,low',
+            'due_at' => 'nullable|date',
         ];
     }
 }

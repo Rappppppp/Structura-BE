@@ -12,18 +12,15 @@ class ProjectResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
-            'client' => $this->whenLoaded('client', function () {
-                return [
-                    'id' => $this->client?->id,
-                    'name' => $this->client?->name,
-                ];
+            'clients' => $this->whenLoaded('clients', function () {
+                return ClientResource::collection($this->clients);
             }),
             'budget' => (float) $this->budget,
             'progress' => (float) $this->progress,
             'status' => $this->status,
             'deadline_at' => $this->deadline_at?->toDateTimeString(),
             'pending_tasks' => $this->when(isset($this->pending_tasks), $this->pending_tasks),
-            'team_count' => $this->when(isset($this->team_count), $this->team_count),
+            'team_count' => $this->team_count ?? 0,
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),
         ];

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\ApiController;
 use App\Http\Resources\PaymentResource;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
@@ -13,6 +12,23 @@ class PaymentController extends ApiController
     {
         $perPage = (int) $request->get('per_page', 15);
         $query = Invoice::query()->with(['client', 'project']);
+
+        // Filter by role: non-admins only see payments for their clients or projects
+        $user = $request->user();
+        if ($user && strtolower((string) $user->role) !== 'admin') {
+            $query->where(function ($q) use ($user) {
+                // Show payments for clients the user owns
+                $q->whereHas('client', function ($subQ) use ($user) {
+                    $subQ->where('account_owner_id', $user->id);
+                })
+                // Or show payments for projects the user is part of
+                    ->orWhereHas('project', function ($subQ) use ($user) {
+                        $subQ->whereHas('team', function ($teamQ) use ($user) {
+                            $teamQ->where('user_id', $user->id);
+                        });
+                    });
+            });
+        }
 
         if ($search = $request->get('search')) {
             $query->where('invoice_id', 'like', "%{$search}%");
@@ -31,7 +47,22 @@ class PaymentController extends ApiController
         // Totals apply client filter for context, but always show all status breakdowns
         $totalsQuery = Invoice::query();
 
-        if ($clientId) {
+        if ($user && strtolower((string) $user->role) !== 'admin') {
+            $totalsQuery->where(function ($q) use ($user) {
+                // Show payments for clients the user owns
+                $q->whereHas('client', function ($subQ) use ($user) {
+                    $subQ->where('account_owner_id', $user->id);
+                })
+                // Or show payments for projects the user is part of
+                    ->orWhereHas('project', function ($subQ) use ($user) {
+                        $subQ->whereHas('team', function ($teamQ) use ($user) {
+                            $teamQ->where('user_id', $user->id);
+                        });
+                    });
+            });
+        }
+
+        if (($clientId = $request->get('client_id'))) {
             $totalsQuery->where('client_id', $clientId);
         }
 
@@ -52,9 +83,21 @@ class PaymentController extends ApiController
         ]);
     }
 
-    public function show(Invoice $payment)
+    public function show(Request $request, Invoice $payment)
     {
+        // Check authorization: user must be admin, payment client owner, or project team member
+        $user = $request->user();
+        if ($user && strtolower((string) $user->role) !== 'admin') {
+            $isClientOwner = $payment->client->account_owner_id === $user->id;
+            $isProjectMember = $payment->project->team()->where('user_id', $user->id)->exists();
+
+            if (! $isClientOwner && ! $isProjectMember) {
+                return $this->error('Unauthorized to view this payment', 403);
+            }
+        }
+
         $payment->load(['client', 'project']);
+
         return $this->success(new PaymentResource($payment), 'Payment retrieved');
     }
 }

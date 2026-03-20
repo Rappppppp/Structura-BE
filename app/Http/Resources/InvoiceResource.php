@@ -17,12 +17,6 @@ class InvoiceResource extends JsonResource
                     'name' => $this->project?->name,
                 ];
             }),
-            'client' => $this->whenLoaded('client', function () {
-                return [
-                    'id' => $this->client?->id,
-                    'name' => $this->client?->name,
-                ];
-            }),
             'amount' => (float) $this->amount,
             'status' => $this->status,
             'due_date' => $this->due_date?->toDateTimeString(),
