@@ -21,7 +21,7 @@ class UpdateProjectRequest extends FormRequest
             'client_ids.*' => 'uuid|exists:clients,id',
             'budget' => 'nullable|numeric|min:0',
             'progress' => 'nullable|numeric|min:0|max:100',
-            'status' => 'nullable|in:active,review,completed,on-hold',
+            'status' => 'nullable|in:active,review,completed,on-hold,cancelled',
             'deadline_at' => 'sometimes|required|date',
         ];
     }

@@ -16,6 +16,7 @@ class ClientResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'location' => $this->location,
+            'address' => $this->location,
             'active_projects' => $this->active_projects,
             'total_value' => (float) $this->total_value,
             'status' => $this->status,
@@ -25,6 +26,16 @@ class ClientResource extends JsonResource
                     'name' => $this->accountOwner?->name,
                     'email' => $this->accountOwner?->email,
                 ];
+            }),
+            'projects' => $this->whenLoaded('projects', function () {
+                return $this->projects->map(function ($project) {
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'status' => $project->status,
+                        'budget' => $project->budget,
+                    ];
+                });
             }),
             'projects_count' => $this->when(isset($this->projects_count), $this->projects_count),
             'created_at' => $this->created_at?->toDateTimeString(),

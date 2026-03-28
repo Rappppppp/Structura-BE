@@ -15,6 +15,9 @@ class ProjectResource extends JsonResource
             'clients' => $this->whenLoaded('clients', function () {
                 return ClientResource::collection($this->clients);
             }),
+            'invoices' => $this->whenLoaded('invoices', function () {
+                return InvoiceResource::collection($this->invoices);
+            }),
             'budget' => (float) $this->budget,
             'progress' => (float) $this->progress,
             'status' => $this->status,

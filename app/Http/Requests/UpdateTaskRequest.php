@@ -21,6 +21,7 @@ class UpdateTaskRequest extends FormRequest
             'status' => 'nullable|in:todo,in-progress,done',
             'priority' => 'nullable|in:high,medium,low',
             'due_at' => 'nullable|date',
+            'work_percentage' => 'nullable|numeric|min:0|max:100',
         ];
     }
 }

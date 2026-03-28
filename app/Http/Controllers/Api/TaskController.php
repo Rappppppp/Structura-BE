@@ -90,7 +90,18 @@ class TaskController extends ApiController
             }
         }
 
-        $task->update($request->validated());
+        $data = $request->validated();
+        
+        // Handle work_percentage specially - auto-mark as done if it reaches 100%
+        if (isset($data['work_percentage'])) {
+            $workPercentage = $data['work_percentage'];
+            unset($data['work_percentage']);
+            $task->update($data);
+            $task->updateWorkPercentage($workPercentage);
+        } else {
+            $task->update($data);
+        }
+
         $task->project->updateProgressFromTasks();
 
         return $this->success(new TaskResource($task), 'Task updated');

@@ -25,11 +25,13 @@ class Task extends Model
         'status',
         'priority',
         'due_at',
+        'work_percentage',
     ];
 
     protected $casts = [
         'est_hours' => 'decimal:2',
         'spent_hours' => 'decimal:2',
+        'work_percentage' => 'decimal:2',
         'due_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -118,6 +120,23 @@ class Task extends Model
     // ==================== BUSINESS LOGIC ====================
 
     /**
+     * Update work percentage and auto-mark as done if 100%
+     */
+    public function updateWorkPercentage(float $percentage): bool
+    {
+        $percentage = max(0, min(100, $percentage)); // Clamp between 0-100
+        
+        $data = ['work_percentage' => $percentage];
+        
+        // Auto-mark as done if work reaches 100%
+        if ($percentage >= 100 && $this->status !== 'done') {
+            $data['status'] = 'done';
+        }
+        
+        return $this->update($data);
+    }
+
+    /**
      * Mark task as done
      */
     public function markAsDone(): bool
@@ -195,10 +214,16 @@ class Task extends Model
     }
 
     /**
-     * Get progress percentage based on status
+     * Get progress percentage (uses work_percentage if set, otherwise based on status)
      */
     public function getProgressPercentage(): float
     {
+        // If work percentage is explicitly set, use it
+        if ($this->work_percentage > 0) {
+            return floatval($this->work_percentage);
+        }
+        
+        // Otherwise calculate based on status
         return match ($this->status) {
             'done' => 100,
             'in-progress' => 50,

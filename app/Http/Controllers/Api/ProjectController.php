@@ -14,7 +14,7 @@ class ProjectController extends ApiController
     public function index(Request $request)
     {
         $perPage = (int) $request->get('per_page', 15);
-        $query = Project::query()->with(['clients'])->withCount('team');
+        $query = Project::query()->with(['clients', 'invoices'])->withCount('team');
 
         // Filter by role: non-admins only see projects they're assigned to
         $user = $request->user();

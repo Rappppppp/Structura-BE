@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Services;
 
 use Intervention\Image\Facades\Image;
@@ -21,14 +22,33 @@ class ImageOptimizationService
         int $maxWidth = 1280,
         int $maxHeight = 1280
     ): string {
+        $original = $base64Image;
+
         try {
-            // Handle data URI format
-            if (strpos($base64Image, 'data:image') === 0) {
-                $base64Image = explode(',', $base64Image)[1] ?? $base64Image;
+            if (empty($base64Image)) {
+                return $original;
             }
 
-            // Decode and create image
-            $image = Image::make(base64_decode($base64Image));
+            // Extract base64 payload and optional mime
+            $payload = $base64Image;
+            $mime = null;
+            if (preg_match('/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.*)$/', $base64Image, $matches)) {
+                $mime = $matches[1] ?? null;
+                $payload = $matches[2] ?? '';
+            }
+
+            // Clean and decode
+            $payload = preg_replace('/\s+/', '', $payload);
+            $decoded = base64_decode($payload, true);
+            if ($decoded === false) {
+                return $original;
+            }
+
+            // Use Intervention Image properly
+            $image = Image::make($decoded);
+            if (! $image) {
+                return $original;
+            }
 
             // Resize if necessary
             if ($image->width() > $maxWidth || $image->height() > $maxHeight) {
@@ -38,12 +58,19 @@ class ImageOptimizationService
                 });
             }
 
-            // Encode back to base64
-            $encodedImage = base64_encode($image->encode('jpeg', $quality));
-            return 'data:image/jpeg;base64,' . $encodedImage;
-        } catch (\Exception $e) {
-            // If compression fails, return original
-            return $base64Image;
+            // Preserve PNG output when source is PNG (to keep transparency), otherwise use JPEG
+            $currentMime = $image->mime() ?? $mime;
+            if ($currentMime && stripos($currentMime, 'png') !== false) {
+                $out = $image->encode('png');
+                $optimized = base64_encode((string) $out);
+                return 'data:image/png;base64,' . $optimized;
+            }
+
+            $out = $image->encode('jpeg', $quality);
+            $optimized = base64_encode((string) $out);
+            return 'data:image/jpeg;base64,' . $optimized;
+        } catch (\Throwable $e) {
+            return $original;
         }
     }
 
@@ -55,8 +82,20 @@ class ImageOptimizationService
      */
     public static function getBase64Size(string $base64Image): int
     {
-        $base64 = explode(',', $base64Image)[1] ?? $base64Image;
-        return (int) (strlen(rtrim($base64, '=')) * 3 / 4);
+        $base64 = preg_replace('#^data:image/[^;]+;base64,#', '', $base64Image);
+        $base64 = preg_replace('/\s+/', '', $base64);
+        $length = strlen($base64);
+        if ($length === 0) {
+            return 0;
+        }
+        $padding = 0;
+        if ($length >= 2 && substr($base64, -2) === '==') {
+            $padding = 2;
+        } elseif ($length >= 1 && substr($base64, -1) === '=') {
+            $padding = 1;
+        }
+        $size = (int) floor($length * 3 / 4) - $padding;
+        return max(0, $size);
     }
 
     /**
@@ -73,7 +112,8 @@ class ImageOptimizationService
 
         $k = 1024;
         $sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        $i = (int) floor(log($bytes, $k));
+        $i = (int) floor(log($bytes) / log($k));
+        $i = max(0, min($i, count($sizes) - 1));
 
         return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
     }
