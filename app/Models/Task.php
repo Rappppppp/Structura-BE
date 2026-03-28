@@ -26,6 +26,9 @@ class Task extends Model
         'priority',
         'due_at',
         'work_percentage',
+        'category',
+        'subCategory',
+        'finishingType',
     ];
 
     protected $casts = [
@@ -36,6 +39,9 @@ class Task extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'category' => 'string',
+        'subCategory' => 'string',
+        'finishingType' => 'string',
     ];
 
     // ==================== RELATIONSHIPS ====================

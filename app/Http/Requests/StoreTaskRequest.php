@@ -22,6 +22,9 @@ class StoreTaskRequest extends FormRequest
             'priority' => 'nullable|in:high,medium,low',
             'due_at' => 'nullable|date',
             'work_percentage' => 'nullable|numeric|min:0|max:100',
+            'category' => 'required|in:structural,architectural',
+            'subCategory' => 'required_if:category,architectural|nullable|in:masonry,plumbing,electrical,finishing',
+            'finishingType' => 'required_if:subCategory,finishing|nullable|in:ceiling,painting,tiles,fixtures,facade,roofing',
         ];
     }
 }
