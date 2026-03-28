@@ -40,7 +40,8 @@ Route::middleware('api')->group(function () {
     // Authenticated endpoints
     Route::middleware('auth:api')->group(function () {
         // All read endpoints (require authentication)
-        Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
+        // Consolidated client resource routes to avoid duplicate route names.
+        Route::apiResource('clients', ClientController::class);
         Route::apiResource('projects', ProjectController::class)->only(['index', 'show']);
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show'])->parameters(['invoices' => 'invoice']);
         Route::apiResource('tasks', TaskController::class)->only(['index', 'show']);
@@ -59,7 +60,7 @@ Route::middleware('api')->group(function () {
         Route::get('attendance/{attendance}', [AttendanceController::class, 'show']);
 
         // All write endpoints (require authentication)
-        Route::apiResource('clients', ClientController::class)->except(['index', 'show']);
+        // (Handled by the consolidated resource above)
         Route::apiResource('projects', ProjectController::class)->except(['index', 'show']);
         Route::apiResource('invoices', InvoiceController::class)->except(['index', 'show'])->parameters(['invoices' => 'invoice']);
         Route::apiResource('tasks', TaskController::class)->except(['index', 'show']);
@@ -99,7 +100,7 @@ Route::middleware('api')->group(function () {
     });
 
     // Admin routes - require JWT auth and admin ability
-    Route::middleware(['auth:api', 'can:admin'])->prefix('admin')->group(function () {
+    Route::middleware(['auth:api', 'can:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::apiResource('clients', ClientAdminController::class);
         Route::apiResource('projects', ProjectAdminController::class);
         Route::apiResource('invoices', InvoiceAdminController::class)->parameters(['invoices' => 'invoice']);

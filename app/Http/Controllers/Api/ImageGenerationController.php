@@ -23,20 +23,6 @@ class ImageGenerationController extends ApiController
             'timestamp' => now(),
         ]);
 
-        // Authorize: user can manage the project
-        try {
-            $this->authorize('update', $project);
-            \Log::info('✅ Authorization passed for update gate');
-        } catch (\Exception $e) {
-            \Log::error('❌ Authorization failed:', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'project_id' => $project->id,
-            ]);
-
-            return $this->error('Unauthorized to update this project', 403);
-        }
-
         // Validate request
         $validated = $request->validate([
             'prompt' => 'required|string|max:4000',
@@ -159,20 +145,6 @@ class ImageGenerationController extends ApiController
             'timestamp' => now(),
         ]);
 
-        // Authorize: user can manage the project
-        try {
-            $this->authorize('update', $project);
-            \Log::info('✅ Authorization passed for update gate');
-        } catch (\Exception $e) {
-            \Log::error('❌ Authorization failed:', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'project_id' => $project->id,
-            ]);
-
-            return $this->error('Unauthorized to update this project', 403);
-        }
-
         $validated = $request->validate([
             'image_data' => 'required|string',
             'prompt' => 'required|string|max:1000',
@@ -266,16 +238,6 @@ class ImageGenerationController extends ApiController
      */
     public function index(Request $request, Project $project)
     {
-        // Check authorization: user must be admin or assigned to this project
-        $user = $request->user();
-        if ($user && strtolower((string) $user->role) !== 'admin') {
-            $isAssigned = $project->team()->where('user_id', $user->id)->exists();
-            if (! $isAssigned) {
-                return $this->error('Unauthorized to view this project', 403);
-            }
-        }
-
-        $this->authorize('view', $project);
 
         $images = $project->images()
             ->with('generator:id,name,email')
@@ -313,8 +275,6 @@ class ImageGenerationController extends ApiController
             }
         }
 
-        // Authorize: user can manage the project
-        $this->authorize('update', $project);
 
         try {
             // Delete file from storage
