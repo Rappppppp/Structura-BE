@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use DB;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends ApiController
 {
@@ -34,7 +35,7 @@ class AuthController extends ApiController
                 ]);
             });
 
-            $token = $user->createToken('api-token', ['*'])->plainTextToken;
+            $token = JWTAuth::fromUser($user);
 
             return $this->success(
                 [
@@ -59,7 +60,7 @@ class AuthController extends ApiController
     public function login(LoginRequest $request): JsonResponse
     {
         // Ensure request is not rate limited before proceeding
-        $request->ensureIsNotRateLimited();
+        // $request->ensureIsNotRateLimited();
 
         $user = User::where('email', $request->input('email'))->first();
 
@@ -70,26 +71,20 @@ class AuthController extends ApiController
             ]);
         }
 
-        // Check if user account is active
-        if ($user->trashed()) {
-            throw ValidationException::withMessages([
-                'email' => 'This account has been disabled.',
-            ]);
-        }
+        // // Check if user account is active
+        // if ($user->trashed()) {
+        //     throw ValidationException::withMessages([
+        //         'email' => 'This account has been disabled.',
+        //     ]);
+        // }
 
-        // Create token with appropriate abilities
-        $abilities = ['*'];
-        if ($user->role === 'admin') {
-            $abilities = ['admin'];
-        }
-
-        $token = $user->createToken('api-token', $abilities)->plainTextToken;
+        // Create JWT token
+        $token = JWTAuth::fromUser($user);
 
         return $this->success(
             [
                 'user' => new UserResource($user),
                 'token' => $token,
-                'remember_me' => $request->shouldRemember(),
             ],
             'Login successful'
         );
@@ -104,11 +99,7 @@ class AuthController extends ApiController
     public function logout(\Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
-
-            if ($user && $user->currentAccessToken()) {
-                $user->currentAccessToken()->delete();
-            }
+            JWTAuth::invalidate(JWTAuth::getToken());
 
             return $this->success([], 'Logged out successfully');
         } catch (\Exception $e) {
@@ -139,19 +130,10 @@ class AuthController extends ApiController
     public function refresh(\Illuminate\Http\Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
-
-            // Delete old token
-            $user->currentAccessToken()->delete();
-
-            // Create new token
-            $token = $user->createToken('api-token', ['*'])->plainTextToken;
+            $token = JWTAuth::refresh(JWTAuth::getToken());
 
             return $this->success(
-                [
-                    'user' => new UserResource($user),
-                    'token' => $token,
-                ],
+                ['token' => $token],
                 'Token refreshed successfully'
             );
         } catch (\Exception $e) {

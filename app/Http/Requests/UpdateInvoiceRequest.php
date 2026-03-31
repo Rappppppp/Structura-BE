@@ -19,7 +19,6 @@ class UpdateInvoiceRequest extends FormRequest
         return [
             'invoice_id' => ['sometimes', 'required', 'string', Rule::unique('invoices', 'invoice_id')->ignore($invoiceId)],
             'project_id' => 'sometimes|required|exists:projects,id',
-            'client_id' => 'sometimes|required|exists:clients,id',
             'amount' => 'nullable|numeric|min:0',
             'status' => 'nullable|in:paid,pending,overdue',
             'due_date' => 'nullable|date',

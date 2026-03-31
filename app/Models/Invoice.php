@@ -15,11 +15,18 @@ class Invoice extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    /**
+     * Use invoice_id as the route key for API endpoints
+     */
+    public function getRouteKeyName()
+    {
+        return 'invoice_id';
+    }
+
     protected $fillable = [
         'id',
         'invoice_id',
         'project_id',
-        'client_id',
         'amount',
         'status',
         'due_date',
@@ -42,11 +49,6 @@ class Invoice extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
-    }
-
-    public function client(): BelongsTo
-    {
-        return $this->belongsTo(Client::class);
     }
 
     // ==================== QUERY SCOPES ====================
@@ -73,11 +75,6 @@ class Invoice extends Model
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
-    }
-
-    public function scopeByClient($query, $clientId)
-    {
-        return $query->where('client_id', $clientId);
     }
 
     public function scopePaidAfter($query, $date)

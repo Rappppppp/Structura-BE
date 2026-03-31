@@ -16,7 +16,6 @@ class StoreInvoiceRequest extends FormRequest
         return [
             'invoice_id' => 'required|string|unique:invoices,invoice_id',
             'project_id' => 'required|exists:projects,id',
-            'client_id' => 'required|exists:clients,id',
             'amount' => 'required|numeric|min:0',
             'status' => 'nullable|in:paid,pending,overdue',
             'due_date' => 'required|date',

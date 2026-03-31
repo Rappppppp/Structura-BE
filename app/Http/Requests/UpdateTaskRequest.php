@@ -20,6 +20,11 @@ class UpdateTaskRequest extends FormRequest
             'assigned_to' => 'nullable|exists:users,id',
             'status' => 'nullable|in:todo,in-progress,done',
             'priority' => 'nullable|in:high,medium,low',
+            'due_at' => 'nullable|date',
+            'work_percentage' => 'nullable|numeric|min:0|max:100',
+            'category' => 'sometimes|required|in:structural,architectural',
+            'subCategory' => 'required_if:category,architectural|nullable|in:masonry,plumbing,electrical,finishing',
+            'finishingType' => 'required_if:subCategory,finishing|nullable|in:ceiling,painting,tiles,fixtures,facade,roofing',
         ];
     }
 }

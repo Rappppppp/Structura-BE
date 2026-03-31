@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
@@ -37,9 +38,18 @@ class Client extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
-    public function projects(): HasMany
+
+    // ==================== RELATIONSHIPS ====================
+
+    public function projects(): BelongsToMany
     {
-        return $this->hasMany(Project::class);
+        return $this->belongsToMany(Project::class, 'project_clients', 'client_id', 'project_id')
+            ->withTimestamps();
+    }
+
+    public function accountOwner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'account_owner_id');
     }
 
     public function invoices(): HasMany

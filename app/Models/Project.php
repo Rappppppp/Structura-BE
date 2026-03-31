@@ -4,24 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
         'id',
         'name',
         'description',
-        'client_id',
         'budget',
         'progress',
         'status',
@@ -39,15 +39,16 @@ class Project extends Model
 
     // ==================== RELATIONSHIPS ====================
 
-    public function client(): BelongsTo
+    public function clients(): BelongsToMany
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsToMany(Client::class, 'project_clients', 'project_id', 'client_id')
+            ->withTimestamps();
     }
 
     public function team(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_user_roles', 'project_id', 'user_id')
-            ->withPivot('role')
+            ->withPivot('base_role', 'specialty_role')
             ->withTimestamps();
     }
 
@@ -74,6 +75,16 @@ class Project extends Model
     public function timelineEvents(): HasMany
     {
         return $this->hasMany(TimelineEvent::class)->orderBy('event_date', 'desc');
+    }
+
+    public function projectFiles(): HasMany
+    {
+        return $this->hasMany(ProjectFile::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProjectImage::class);
     }
 
     // ==================== QUERY SCOPES ====================
@@ -107,7 +118,9 @@ class Project extends Model
 
     public function scopeByClient($query, $clientId)
     {
-        return $query->where('client_id', $clientId);
+        return $query->whereHas('clients', function ($q) use ($clientId) {
+            $q->where('client_id', $clientId);
+        });
     }
 
     // ==================== BUSINESS LOGIC ====================
@@ -154,6 +167,7 @@ class Project extends Model
     public function getBudgetUtilization(): float
     {
         $spent = $this->invoices()->sum('amount');
+
         return ($spent / $this->budget) * 100;
     }
 
@@ -171,6 +185,7 @@ class Project extends Model
     public function getRemainingBudget(): float
     {
         $spent = $this->invoices()->sum('amount');
+
         return max(0, $this->budget - $spent);
     }
 

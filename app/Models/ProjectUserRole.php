@@ -18,7 +18,9 @@ class ProjectUserRole extends Model
         'id',
         'project_id',
         'user_id',
-        'role',
+        'base_role',
+        'specialty_role',
+        'role', // Keep for backward compatibility during migration
     ];
 
     protected $casts = [
@@ -40,9 +42,14 @@ class ProjectUserRole extends Model
 
     // ==================== QUERY SCOPES ====================
 
-    public function scopeByRole($query, $role)
+    public function scopeByBaseRole($query, $baseRole)
     {
-        return $query->where('role', $role);
+        return $query->where('base_role', $baseRole);
+    }
+
+    public function scopeBySpecialtyRole($query, $specialtyRole)
+    {
+        return $query->where('specialty_role', $specialtyRole);
     }
 
     public function scopeByProject($query, $projectId)
@@ -55,14 +62,19 @@ class ProjectUserRole extends Model
         return $query->where('user_id', $userId);
     }
 
-    public function scopeManagers($query)
+    public function scopeAdmins($query)
     {
-        return $query->where('role', 'Project Manager');
+        return $query->where('base_role', 'admin');
     }
 
-    public function scopeLeads($query)
+    public function scopeMembers($query)
     {
-        return $query->where('role', 'like', '%Lead%');
+        return $query->where('base_role', 'member');
+    }
+
+    public function scopeViewers($query)
+    {
+        return $query->where('base_role', 'viewer');
     }
 
     // ==================== BUSINESS LOGIC ====================
@@ -84,19 +96,27 @@ class ProjectUserRole extends Model
     }
 
     /**
-     * Check if user is project manager
+     * Check if user is project admin
      */
-    public function isProjectManager(): bool
+    public function isProjectAdmin(): bool
     {
-        return $this->role === 'Project Manager';
+        return $this->base_role === 'admin';
     }
 
     /**
-     * Check if user is lead
+     * Check if user has member or higher access
      */
-    public function isLead(): bool
+    public function isMember(): bool
     {
-        return str_contains(strtolower($this->role), 'lead');
+        return in_array($this->base_role, ['admin', 'member']);
+    }
+
+    /**
+     * Check if user has viewer or higher access
+     */
+    public function isViewer(): bool
+    {
+        return in_array($this->base_role, ['admin', 'member', 'viewer']);
     }
 
     /**

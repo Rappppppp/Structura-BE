@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
     use HasFactory, HasUuids;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
@@ -22,15 +24,24 @@ class Task extends Model
         'assigned_to',
         'status',
         'priority',
+        'due_at',
+        'work_percentage',
+        'category',
+        'subCategory',
+        'finishingType',
     ];
 
     protected $casts = [
         'est_hours' => 'decimal:2',
         'spent_hours' => 'decimal:2',
+        'work_percentage' => 'decimal:2',
         'due_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'category' => 'string',
+        'subCategory' => 'string',
+        'finishingType' => 'string',
     ];
 
     // ==================== RELATIONSHIPS ====================
@@ -43,6 +54,11 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class)->latest();
     }
 
     // ==================== QUERY SCOPES ====================
@@ -110,6 +126,23 @@ class Task extends Model
     // ==================== BUSINESS LOGIC ====================
 
     /**
+     * Update work percentage and auto-mark as done if 100%
+     */
+    public function updateWorkPercentage(float $percentage): bool
+    {
+        $percentage = max(0, min(100, $percentage)); // Clamp between 0-100
+        
+        $data = ['work_percentage' => $percentage];
+        
+        // Auto-mark as done if work reaches 100%
+        if ($percentage >= 100 && $this->status !== 'done') {
+            $data['status'] = 'done';
+        }
+        
+        return $this->update($data);
+    }
+
+    /**
      * Mark task as done
      */
     public function markAsDone(): bool
@@ -170,7 +203,7 @@ class Task extends Model
      */
     public function getPriorityLevel(): int
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'high' => 3,
             'medium' => 2,
             'low' => 1,
@@ -187,11 +220,17 @@ class Task extends Model
     }
 
     /**
-     * Get progress percentage based on status
+     * Get progress percentage (uses work_percentage if set, otherwise based on status)
      */
     public function getProgressPercentage(): float
     {
-        return match($this->status) {
+        // If work percentage is explicitly set, use it
+        if ($this->work_percentage > 0) {
+            return floatval($this->work_percentage);
+        }
+        
+        // Otherwise calculate based on status
+        return match ($this->status) {
             'done' => 100,
             'in-progress' => 50,
             'todo' => 0,
@@ -212,7 +251,7 @@ class Task extends Model
      */
     public function getFormattedTitle(): string
     {
-        $priority = match($this->priority) {
+        $priority = match ($this->priority) {
             'high' => '🔴',
             'medium' => '🟡',
             'low' => '🟢',
@@ -227,7 +266,7 @@ class Task extends Model
      */
     public function getStatusColor(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'done' => 'green',
             'in-progress' => 'blue',
             'todo' => 'gray',
