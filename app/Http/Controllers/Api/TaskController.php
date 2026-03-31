@@ -26,7 +26,7 @@ class TaskController extends ApiController
                         $teamQ->where('user_id', $user->id);
                     });
                 })
-                // Or show tasks assigned to the user
+                    // Or show tasks assigned to the user
                     ->orWhere('assigned_to', $user->id);
             });
         }
@@ -62,6 +62,40 @@ class TaskController extends ApiController
         return $this->success(new TaskResource($task), 'Task created', 201);
     }
 
+
+    public function bulkCreate(Request $request)
+    {
+        $data = $request->validate([
+            'projectId' => 'required|uuid|exists:projects,id',
+            'tasks' => 'required|array|min:1',
+            'tasks.*.title' => 'required|string|max:255',
+            'tasks.*.description' => 'nullable|string',
+            'tasks.*.assigned_to' => 'nullable|uuid|exists:users,id',
+            'tasks.*.status' => 'nullable|in:todo,in-progress,done',
+            'tasks.*.priority' => 'nullable|in:high,medium,low',
+            'tasks.*.due_at' => 'nullable|date',
+            'tasks.*.work_percentage' => 'nullable|numeric|min:0|max:100',
+            'tasks.*.category' => 'required|in:structural,architectural',
+            'tasks.*.subCategory' => 'required_if:tasks.*.category,architectural|nullable|in:masonry,plumbing,electrical,finishing',
+            'tasks.*.finishingType' => 'required_if:tasks.*.subCategory,finishing|nullable|in:ceiling,painting,tiles,fixtures,facade,roofing',
+        ]);
+
+        $created = DB::transaction(function () use ($data) {
+            $tasks = [];
+            foreach ($data['tasks'] as $taskData) {
+                $taskData['project_id'] = $data['projectId'];
+                $tasks[] = Task::create($taskData);
+            }
+            // Optionally update project progress
+            if (count($tasks) > 0) {
+                $tasks[0]->project->updateProgressFromTasks();
+            }
+            return $tasks;
+        });
+
+        return $this->success(TaskResource::collection($created), 'Tasks created', 201);
+    }
+
     public function show(Request $request, Task $task)
     {
         // Check authorization: user must be admin, project team member, or assignee
@@ -70,7 +104,7 @@ class TaskController extends ApiController
             $isProjectMember = $task->project->team()->where('user_id', $user->id)->exists();
             $isAssignee = $task->assigned_to === $user->id;
 
-            if (! $isProjectMember && ! $isAssignee) {
+            if (!$isProjectMember && !$isAssignee) {
                 return $this->error('Unauthorized to view this task', 403);
             }
         }
@@ -91,7 +125,7 @@ class TaskController extends ApiController
         }
 
         $data = $request->validated();
-        
+
         // Handle work_percentage specially - auto-mark as done if it reaches 100%
         if (isset($data['work_percentage'])) {
             $workPercentage = $data['work_percentage'];

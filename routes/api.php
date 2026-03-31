@@ -78,6 +78,14 @@ Route::middleware('api')->group(function () {
         Route::post('projects/{project}/files', [ProjectFileController::class, 'store']);
         Route::delete('projects/{project}/files/{file}', [ProjectFileController::class, 'destroy']);
 
+
+        // AI Endpoints
+        Route::post('ai/timeline-predict', [\App\Http\Controllers\Api\AIController::class, 'timelinePredict']);
+        Route::post('ai/task-suggest', [\App\Http\Controllers\Api\AIController::class, 'taskSuggest']);
+
+        // Bulk create tasks
+        Route::post('tasks/bulk', [\App\Http\Controllers\Api\TaskController::class, 'bulkCreate']);
+
         // Project images (AI-generated)
         Route::post('projects/{project}/images/generate', [ImageGenerationController::class, 'generateWithOpenAI']);
         Route::get('projects/{project}/images', [ImageGenerationController::class, 'index']);
